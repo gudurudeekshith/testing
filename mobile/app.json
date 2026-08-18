@@ -1,0 +1,58 @@
+{
+  "expo": {
+    "name": "KitSphere",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/kitsphere-official.png",
+    "scheme": "mobile",
+    "extra": {
+      "GOOGLE_EXPO_CLIENT_ID": "REPLACE_WITH_EXPO_CLIENT_ID",
+      "GOOGLE_ANDROID_CLIENT_ID": "REPLACE_WITH_ANDROID_CLIENT_ID",
+      "GOOGLE_IOS_CLIENT_ID": "REPLACE_WITH_IOS_CLIENT_ID",
+      "GOOGLE_WEB_CLIENT_ID": "REPLACE_WITH_WEB_CLIENT_ID",
+      "API_BASE_URL": "http://192.168.1.10:5000/api",
+      "router": {},
+      "eas": {
+        "projectId": "5d9c116a-1878-4524-af90-0b689a5b5ab0"
+      }
+    },
+    "userInterfaceStyle": "automatic",
+    "ios": {
+      "icon": "./assets/expo.icon"
+    },
+    "android": {
+      "package": "com.kitsphere.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0B1F2F",
+        "foregroundImage": "./assets/images/kitsphere-official.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "output": "static",
+      "favicon": "./assets/images/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#0B1F2F",
+          "image": "./assets/images/kitsphere-official.png",
+          "imageWidth": 120
+        }
+      ],
+      "expo-secure-store",
+      "expo-web-browser",
+      "expo-image",
+      "@react-native-community/datetimepicker"
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    }
+  }
+}
