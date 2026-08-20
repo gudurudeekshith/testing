@@ -16,9 +16,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../theme/ThemeContext';
-import { apiRequest } from '../../services/api';
+import { apiRequest, apiUploadImage } from '../../services/api';
 import { getCurrentUser, getAuthToken } from '../../utils/auth';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
 
@@ -133,6 +134,61 @@ export default function EventsClubsScreen() {
   const [eventLat, setEventLat] = useState('');
   const [eventLng, setEventLng] = useState('');
   const [eventClubId, setEventClubId] = useState('');
+  const [eventImage, setEventImage] = useState('');
+
+  const [clubUploadMode, setClubUploadMode] = useState<'upload' | 'url'>('url');
+  const [eventUploadMode, setEventUploadMode] = useState<'upload' | 'url'>('url');
+  const [uploadingImage, setUploadingImage] = useState(false);
+
+  const pickAndUploadImage = async (onSuccess: (url: string) => void) => {
+    try {
+      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (!permission.granted) {
+        Alert.alert('Permission Denied', 'Please allow gallery access to upload images.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      });
+
+      if (result.canceled || !result.assets?.length) {
+        return;
+      }
+
+      const asset = result.assets[0];
+      
+      const fileSizeLimit = 5 * 1024 * 1024; // 5MB
+      if (asset.fileSize && asset.fileSize > fileSizeLimit) {
+        Alert.alert('File Too Large', 'Selected image exceeds the 5MB size limit.');
+        return;
+      }
+
+      const filename = asset.uri.split('/').pop()?.toLowerCase() || '';
+      const allowedExts = ['.jpg', '.jpeg', '.png', '.webp'];
+      const hasValidExt = allowedExts.some(ext => filename.endsWith(ext));
+      if (!hasValidExt && asset.mimeType) {
+        const mime = asset.mimeType.toLowerCase();
+        const allowedMime = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+        if (!allowedMime.includes(mime)) {
+          Alert.alert('Invalid Format', 'Only JPG, JPEG, PNG, and WEBP formats are allowed.');
+          return;
+        }
+      }
+
+      setUploadingImage(true);
+      const uploadedUrl = await apiUploadImage(asset.uri);
+      onSuccess(uploadedUrl);
+      Alert.alert('Success', 'Image uploaded successfully!');
+    } catch (err: any) {
+      console.error('Image upload error:', err);
+      Alert.alert('Upload Failed', err.message || 'An error occurred during upload.');
+    } finally {
+      setUploadingImage(false);
+    }
+  };
 
   // Native Picker value states
   const [eventDatePickerValue, setEventDatePickerValue] = useState(new Date());
@@ -339,6 +395,7 @@ export default function EventsClubsScreen() {
     setClubPhone('');
     setClubYear('');
     setClubCapacity('');
+    setClubUploadMode('url');
     setEditId(null);
   };
 
@@ -354,9 +411,11 @@ export default function EventsClubsScreen() {
     setEventLat('');
     setEventLng('');
     setEventClubId('');
+    setEventImage('');
     setEventDatePickerValue(new Date());
     setEventStartPickerValue(new Date());
     setEventEndPickerValue(new Date(new Date().getTime() + 60 * 60 * 1000));
+    setEventUploadMode('url');
     setEditId(null);
   };
 
@@ -383,6 +442,7 @@ export default function EventsClubsScreen() {
     setClubPhone(club.contactPhone || '');
     setClubYear(club.establishedYear ? club.establishedYear.toString() : '');
     setClubCapacity(club.capacity ? club.capacity.toString() : '');
+    setClubUploadMode('url');
     setIsFormOpen(true);
   };
 
@@ -397,6 +457,7 @@ export default function EventsClubsScreen() {
     setEventLat(event.latitude ? event.latitude.toString() : '');
     setEventLng(event.longitude ? event.longitude.toString() : '');
     setEventClubId(event.club?.id || event.club?._id || '');
+    setEventImage(event.image || '');
 
     const baseD = event.date ? new Date(event.date) : new Date();
     setEventDatePickerValue(baseD);
@@ -410,6 +471,7 @@ export default function EventsClubsScreen() {
     setEventEndPickerValue(endD);
     setEventEnd(formatTime12h(endD));
 
+    setEventUploadMode('url');
     setIsFormOpen(true);
   };
 
@@ -1050,8 +1112,79 @@ export default function EventsClubsScreen() {
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Maximum Members *</Text>
                 <TextInput value={clubCapacity} onChangeText={setClubCapacity} keyboardType="numeric" style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border }]} placeholder="100" placeholderTextColor={colors.textMuted} />
 
-                <Text style={[styles.label, { color: colors.textSecondary }]}>Logo URL</Text>
-                <TextInput value={clubLogo} onChangeText={setClubLogo} style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border }]} placeholder="https://image-link.png" placeholderTextColor={colors.textMuted} />
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Club Logo</Text>
+                
+                {/* Image Preview Panel */}
+                <View style={[styles.previewContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                  {clubLogo ? (
+                    <View style={{ width: '100%', height: '100%', position: 'relative' }}>
+                      <Image source={{ uri: clubLogo }} style={styles.previewImage} resizeMode="cover" />
+                      <TouchableOpacity
+                        style={styles.removeImageBadge}
+                        onPress={() => setClubLogo('')}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close" size={16} color={colors.white} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.placeholderContainer}>
+                      <Ionicons name="image-outline" size={40} color={colors.textMuted} style={{ marginBottom: 4 }} />
+                      <Text style={[styles.placeholderText, { color: colors.textMuted }]}>No Logo Selected</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Selector Mode Buttons */}
+                <View style={styles.modeRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeBtn,
+                      clubUploadMode === 'upload' ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }
+                    ]}
+                    onPress={() => setClubUploadMode('upload')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.modeBtnText, { color: clubUploadMode === 'upload' ? colors.white : colors.textSecondary }]}>Upload Image</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeBtn,
+                      clubUploadMode === 'url' ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }
+                    ]}
+                    onPress={() => setClubUploadMode('url')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.modeBtnText, { color: clubUploadMode === 'url' ? colors.white : colors.textSecondary }]}>Use Image URL</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Conditional Picker/Inputs */}
+                {clubUploadMode === 'upload' ? (
+                  <TouchableOpacity
+                    style={[styles.uploadActionBtn, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, marginBottom: 12 }]}
+                    onPress={() => pickAndUploadImage(setClubLogo)}
+                    disabled={uploadingImage}
+                    activeOpacity={0.8}
+                  >
+                    {uploadingImage ? (
+                      <ActivityIndicator color={colors.primary} size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                        <Text style={[styles.uploadActionBtnText, { color: colors.white }]}>Choose from Gallery</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <TextInput
+                    value={clubLogo}
+                    onChangeText={setClubLogo}
+                    style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 12 }]}
+                    placeholder="Paste Logo URL here (eg. https://example.com/logo.jpg)"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                )}
 
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Contact Email</Text>
                 <TextInput value={clubEmail} onChangeText={setClubEmail} keyboardType="email-address" style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border }]} placeholder="club@kitsw.ac.in" placeholderTextColor={colors.textMuted} />
@@ -1062,8 +1195,14 @@ export default function EventsClubsScreen() {
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Established Year</Text>
                 <TextInput value={clubYear} onChangeText={setClubYear} keyboardType="numeric" style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border }]} placeholder="2020" placeholderTextColor={colors.textMuted} />
 
-                <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleClubSubmit}>
-                  <Text style={[styles.submitBtnText, { color: colors.white }]}>Save Club</Text>
+                <TouchableOpacity
+                  style={[styles.submitBtn, { backgroundColor: colors.primary }, uploadingImage && { opacity: 0.6 }]}
+                  onPress={handleClubSubmit}
+                  disabled={uploadingImage}
+                >
+                  <Text style={[styles.submitBtnText, { color: colors.white }]}>
+                    {uploadingImage ? 'Uploading image...' : 'Save Club'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -1119,11 +1258,91 @@ export default function EventsClubsScreen() {
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Venue Longitude</Text>
                 <TextInput value={eventLng} onChangeText={setEventLng} keyboardType="numeric" style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border }]} placeholder="79.5601" placeholderTextColor={colors.textMuted} />
 
+                <Text style={[styles.label, { color: colors.textSecondary }]}>Event Image</Text>
+                
+                {/* Image Preview Panel */}
+                <View style={[styles.previewContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
+                  {eventImage ? (
+                    <View style={{ width: '100%', height: '100%', position: 'relative' }}>
+                      <Image source={{ uri: eventImage }} style={styles.previewImage} resizeMode="cover" />
+                      <TouchableOpacity
+                        style={styles.removeImageBadge}
+                        onPress={() => setEventImage('')}
+                        activeOpacity={0.8}
+                      >
+                        <Ionicons name="close" size={16} color={colors.white} />
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    <View style={styles.placeholderContainer}>
+                      <Ionicons name="image-outline" size={40} color={colors.textMuted} style={{ marginBottom: 4 }} />
+                      <Text style={[styles.placeholderText, { color: colors.textMuted }]}>No Image Selected</Text>
+                    </View>
+                  )}
+                </View>
+
+                {/* Selector Mode Buttons */}
+                <View style={styles.modeRow}>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeBtn,
+                      eventUploadMode === 'upload' ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }
+                    ]}
+                    onPress={() => setEventUploadMode('upload')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.modeBtnText, { color: eventUploadMode === 'upload' ? colors.white : colors.textSecondary }]}>Upload Image</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={[
+                      styles.modeBtn,
+                      eventUploadMode === 'url' ? { backgroundColor: colors.primary } : { backgroundColor: colors.surface, borderColor: colors.border, borderWidth: 1 }
+                    ]}
+                    onPress={() => setEventUploadMode('url')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={[styles.modeBtnText, { color: eventUploadMode === 'url' ? colors.white : colors.textSecondary }]}>Use Image URL</Text>
+                  </TouchableOpacity>
+                </View>
+
+                {/* Conditional Picker/Inputs */}
+                {eventUploadMode === 'upload' ? (
+                  <TouchableOpacity
+                    style={[styles.uploadActionBtn, { backgroundColor: colors.surfaceSecondary, borderColor: colors.border, marginBottom: 12 }]}
+                    onPress={() => pickAndUploadImage(setEventImage)}
+                    disabled={uploadingImage}
+                    activeOpacity={0.8}
+                  >
+                    {uploadingImage ? (
+                      <ActivityIndicator color={colors.primary} size="small" />
+                    ) : (
+                      <>
+                        <Ionicons name="cloud-upload-outline" size={20} color={colors.primary} style={{ marginRight: 8 }} />
+                        <Text style={[styles.uploadActionBtnText, { color: colors.white }]}>Choose from Gallery</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                ) : (
+                  <TextInput
+                    value={eventImage}
+                    onChangeText={setEventImage}
+                    style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border, marginBottom: 12 }]}
+                    placeholder="Paste Image URL here (eg. https://example.com/banner.jpg)"
+                    placeholderTextColor={colors.textMuted}
+                  />
+                )}
+
                 <Text style={[styles.label, { color: colors.textSecondary }]}>Host Club ID (Optional)</Text>
                 <TextInput value={eventClubId} onChangeText={setEventClubId} style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border }]} placeholder="Paste Club ID here" placeholderTextColor={colors.textMuted} />
 
-                <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleEventSubmit}>
-                  <Text style={[styles.submitBtnText, { color: colors.white }]}>Save Event</Text>
+                <TouchableOpacity
+                  style={[styles.submitBtn, { backgroundColor: colors.primary }, uploadingImage && { opacity: 0.6 }]}
+                  onPress={handleEventSubmit}
+                  disabled={uploadingImage}
+                >
+                  <Text style={[styles.submitBtnText, { color: colors.white }]}>
+                    {uploadingImage ? 'Uploading image...' : 'Save Event'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -1877,5 +2096,74 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     textAlign: 'center',
+  },
+  previewContainer: {
+    height: 150,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  placeholderContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  placeholderText: {
+    fontSize: 12,
+    marginTop: 6,
+    fontWeight: '500',
+  },
+  modeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  modeBtn: {
+    flex: 1,
+    height: 38,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 4,
+  },
+  modeBtnText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  uploadActionBtn: {
+    height: 44,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  uploadActionBtnText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  removeImageBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 59, 48, 0.9)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
