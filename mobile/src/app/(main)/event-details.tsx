@@ -9,6 +9,7 @@ import {
   Alert,
   Linking,
   Platform,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -219,6 +220,11 @@ export default function EventDetailsScreen() {
       </View>
 
       <ScrollView style={styles.scrollContainer} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* HERO IMAGE */}
+        {event.image ? (
+          <Image source={{ uri: event.image }} style={styles.heroImage} resizeMode="cover" />
+        ) : null}
+
         {/* TITLE & CATEGORY */}
         <View style={styles.titleSection}>
           <Text style={[styles.eventTitle, { color: colors.white }]}>{event.title}</Text>
@@ -484,4 +490,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionBtnText: { fontSize: 15, fontWeight: '700' },
+  heroImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 16,
+    marginBottom: 16,
+  },
 });

@@ -644,6 +644,10 @@ export default function EventsClubsScreen() {
         }}
         activeOpacity={0.8}
       >
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
+        ) : null}
+
         <View style={styles.cardHeader}>
           <Text style={[styles.eventTitle, { color: colors.white }]} numberOfLines={1}>
             {item.title}
@@ -902,6 +906,9 @@ export default function EventsClubsScreen() {
     const remainingSeats = item.capacity ? Math.max(0, item.capacity - item.registrationsCount) : null;
     return (
       <View style={[styles.adminItemCard, { flexDirection: 'column', alignItems: 'stretch', backgroundColor: colors.surface, borderColor: colors.border, opacity: isCancelled ? 0.6 : 1 }]}>
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
+        ) : null}
         <View style={styles.cardHeader}>
           <Text style={[styles.eventTitle, { color: colors.white }]} numberOfLines={1}>{item.title}</Text>
           <Text style={[styles.eventCategory, { color: colors.primary, backgroundColor: colors.surfaceSecondary, borderColor: colors.border }]}>
@@ -1666,6 +1673,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
+    marginBottom: 12,
+  },
+  cardImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 10,
     marginBottom: 12,
   },
   cardHeader: {

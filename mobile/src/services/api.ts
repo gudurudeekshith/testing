@@ -67,5 +67,34 @@ export async function apiRequest<T>(
   return data;
 }
 
+export async function apiUploadImage(uri: string): Promise<string> {
+  const token = await getAuthToken();
+  const formData = new FormData();
+  
+  const filename = uri.split('/').pop() || 'image.jpg';
+  const match = /\.(\w+)$/.exec(filename);
+  const type = match ? `image/${match[1]}` : `image/jpeg`;
+  
+  formData.append('image', {
+    uri,
+    name: filename,
+    type,
+  } as any);
+
+  const response = await fetch(`${API_BASE_URL}/admin/upload`, {
+    method: 'POST',
+    body: formData,
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+  });
+
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data?.message || 'Upload failed.');
+  }
+  return data.imageUrl;
+}
+
 export { API_BASE_URL };
 

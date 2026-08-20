@@ -10,6 +10,7 @@ export interface IEvent extends Document {
   venue: string;
   organizer: mongoose.Types.ObjectId; // References User
   club?: mongoose.Types.ObjectId; // References Club
+  image?: string;
   latitude?: number;
   longitude?: number;
   capacity?: number;
@@ -94,6 +95,10 @@ const eventSchema = new Schema<IEvent>(
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',
+      required: false,
+    },
+    image: {
+      type: String,
       required: false,
     },
   },

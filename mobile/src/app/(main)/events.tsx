@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   FlatList,
   ActivityIndicator,
+  Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -99,6 +100,9 @@ export default function EventsScreen() {
         }
         activeOpacity={0.8}
       >
+        {item.image ? (
+          <Image source={{ uri: item.image }} style={styles.cardImage} resizeMode="cover" />
+        ) : null}
         <View style={styles.cardHeader}>
           <Text style={[styles.eventTitle, { color: colors.white }]} numberOfLines={1}>
             {item.title}
@@ -399,6 +403,12 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 16,
     borderWidth: 1,
+    marginBottom: 12,
+  },
+  cardImage: {
+    width: '100%',
+    height: 120,
+    borderRadius: 10,
     marginBottom: 12,
   },
   cardHeader: {

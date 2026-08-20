@@ -101,6 +101,7 @@ export async function getEvents(req: AuthenticatedRequest, res: Response): Promi
       organizer: r.organizer?._id?.toString() || null,
       organizerName: r.organizer?.name || null,
       club: r.club ? { id: r.club._id.toString(), name: r.club.name, category: r.club.category } : null,
+      image: r.image || null,
       latitude: r.latitude,
       longitude: r.longitude,
       capacity: r.capacity,
@@ -145,6 +146,7 @@ export async function getEventById(req: AuthenticatedRequest, res: Response): Pr
       organizer: event.organizer?._id?.toString() || null,
       organizerName: event.organizer?.name || null,
       club: event.club ? { id: event.club._id.toString(), name: event.club.name, category: event.club.category } : null,
+      image: event.image || null,
       latitude: event.latitude,
       longitude: event.longitude,
       capacity: event.capacity,
@@ -170,6 +172,7 @@ export async function createEvent(req: AuthenticatedRequest, res: Response): Pro
       endTime,
       venue,
       club,
+      image,
       latitude,
       longitude,
       capacity,
@@ -226,6 +229,7 @@ export async function createEvent(req: AuthenticatedRequest, res: Response): Pro
       venue: String(venue).trim(),
       organizer: organizerId,
       club: clubObjectId,
+      image: image ? String(image).trim() : undefined,
       latitude: latitude !== undefined ? latitude : null,
       longitude: longitude !== undefined ? longitude : null,
       capacity: capacity !== undefined ? capacity : null,
@@ -287,7 +291,7 @@ export async function updateEvent(req: AuthenticatedRequest, res: Response): Pro
       return;
     }
 
-    const allowed = ['title', 'description', 'category', 'date', 'startTime', 'endTime', 'venue', 'club', 'latitude', 'longitude', 'capacity', 'status'];
+    const allowed = ['title', 'description', 'category', 'date', 'startTime', 'endTime', 'venue', 'club', 'latitude', 'longitude', 'capacity', 'status', 'image'];
     const updates: Record<string, any> = {};
     for (const key of allowed) {
       if (req.body[key] !== undefined) {
