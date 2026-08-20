@@ -81,7 +81,7 @@ export async function apiUploadImage(uri: string): Promise<string> {
     type,
   } as any);
 
-  const response = await fetch(`${API_BASE_URL}/admin/upload`, {
+  const response = await fetch(`${API_BASE_URL}/upload/image`, {
     method: 'POST',
     body: formData,
     headers: {
@@ -93,7 +93,7 @@ export async function apiUploadImage(uri: string): Promise<string> {
   if (!response.ok) {
     throw new Error(data?.message || 'Upload failed.');
   }
-  return data.imageUrl;
+  return data.url;
 }
 
 export { API_BASE_URL };

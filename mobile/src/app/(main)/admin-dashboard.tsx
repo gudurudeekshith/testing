@@ -491,7 +491,16 @@ export default function AdminDashboardScreen() {
               {/* Image Preview Panel */}
               <View style={[styles.previewContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 {clubLogo ? (
-                  <Image source={{ uri: clubLogo }} style={styles.previewImage} resizeMode="cover" />
+                  <View style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    <Image source={{ uri: clubLogo }} style={styles.previewImage} resizeMode="cover" />
+                    <TouchableOpacity
+                      style={styles.removeImageBadge}
+                      onPress={() => setClubLogo('')}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="close" size={16} color={colors.white} />
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   <View style={styles.placeholderContainer}>
                     <Ionicons name="image-outline" size={40} color={colors.textMuted} style={{ marginBottom: 4 }} />
@@ -560,8 +569,14 @@ export default function AdminDashboardScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>Established Year</Text>
               <TextInput value={clubYear} onChangeText={setClubYear} keyboardType="numeric" style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border }]} placeholder="2020" placeholderTextColor={colors.textMuted} />
 
-              <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleClubSubmit}>
-                <Text style={[styles.submitBtnText, { color: colors.white }]}>Save Club</Text>
+              <TouchableOpacity
+                style={[styles.submitBtn, { backgroundColor: colors.primary }, uploadingImage && { opacity: 0.6 }]}
+                onPress={handleClubSubmit}
+                disabled={uploadingImage}
+              >
+                <Text style={[styles.submitBtnText, { color: colors.white }]}>
+                  {uploadingImage ? 'Uploading image...' : 'Save Club'}
+                </Text>
               </TouchableOpacity>
             </View>
           ) : (
@@ -601,7 +616,16 @@ export default function AdminDashboardScreen() {
               {/* Image Preview Panel */}
               <View style={[styles.previewContainer, { borderColor: colors.border, backgroundColor: colors.surface }]}>
                 {eventImage ? (
-                  <Image source={{ uri: eventImage }} style={styles.previewImage} resizeMode="cover" />
+                  <View style={{ width: '100%', height: '100%', position: 'relative' }}>
+                    <Image source={{ uri: eventImage }} style={styles.previewImage} resizeMode="cover" />
+                    <TouchableOpacity
+                      style={styles.removeImageBadge}
+                      onPress={() => setEventImage('')}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons name="close" size={16} color={colors.white} />
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   <View style={styles.placeholderContainer}>
                     <Ionicons name="image-outline" size={40} color={colors.textMuted} style={{ marginBottom: 4 }} />
@@ -664,8 +688,14 @@ export default function AdminDashboardScreen() {
               <Text style={[styles.label, { color: colors.textSecondary }]}>Host Club ID (Optional)</Text>
               <TextInput value={eventClubId} onChangeText={setEventClubId} style={[styles.input, { color: colors.white, backgroundColor: colors.surface, borderColor: colors.border }]} placeholder="Paste Club ID here" placeholderTextColor={colors.textMuted} />
 
-              <TouchableOpacity style={[styles.submitBtn, { backgroundColor: colors.primary }]} onPress={handleEventSubmit}>
-                <Text style={[styles.submitBtnText, { color: colors.white }]}>Save Event</Text>
+              <TouchableOpacity
+                style={[styles.submitBtn, { backgroundColor: colors.primary }, uploadingImage && { opacity: 0.6 }]}
+                onPress={handleEventSubmit}
+                disabled={uploadingImage}
+              >
+                <Text style={[styles.submitBtnText, { color: colors.white }]}>
+                  {uploadingImage ? 'Uploading image...' : 'Save Event'}
+                </Text>
               </TouchableOpacity>
             </View>
           )}
@@ -833,5 +863,21 @@ const styles = StyleSheet.create({
   uploadActionBtnText: {
     fontSize: 13,
     fontWeight: '600',
+  },
+  removeImageBadge: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    backgroundColor: 'rgba(255, 59, 48, 0.9)',
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
 });
