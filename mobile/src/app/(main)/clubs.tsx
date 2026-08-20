@@ -8,6 +8,7 @@ import {
   FlatList,
   ActivityIndicator,
   Image,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +18,11 @@ import { apiRequest } from '../../services/api';
 import { getCurrentUser } from '../../utils/auth';
 
 const CATEGORIES = ['All', 'Technical', 'Cultural', 'Sports', 'Other'];
+
+const isValidObjectId = (val: string | undefined | null): boolean => {
+  if (!val) return false;
+  return /^[0-9a-fA-F]{24}$/.test(val);
+};
 
 export default function ClubsScreen() {
   const { colors } = useTheme();
@@ -101,12 +107,18 @@ export default function ClubsScreen() {
           borderColor: colors.border,
         },
       ]}
-      onPress={() =>
+      onPress={() => {
+        const clubId = item.id || item._id;
+        if (!isValidObjectId(clubId)) {
+          console.error('Invalid club details click in Clubs list. Club:', item);
+          Alert.alert('Error', 'Unable to open club details. Invalid identifier.');
+          return;
+        }
         router.push({
           pathname: '/(main)/club-details',
-          params: { id: item.id || item._id },
-        })
-      }
+          params: { id: clubId },
+        });
+      }}
       activeOpacity={0.8}
     >
       <View

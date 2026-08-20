@@ -3,6 +3,12 @@ import { router } from 'expo-router';
 import { getAuthToken, clearAuth } from '../utils/auth';
 
 function getApiBaseUrl(): string {
+  // 1. Prioritize environment variable first (Expo standard EXPO_PUBLIC_ prefix)
+  if (process.env.EXPO_PUBLIC_API_BASE_URL) {
+    return process.env.EXPO_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
+  }
+
+  // 2. Fallback to extra config (e.g. app.json API_BASE_URL)
   const extra =
     (Constants.expoConfig && (Constants.expoConfig as any).extra) ||
     (Constants.manifest && (Constants.manifest as any).extra) ||
@@ -13,6 +19,7 @@ function getApiBaseUrl(): string {
     return configuredUrl.replace(/\/+$/, '');
   }
 
+  // 3. Fallback to Expo Go dev host dynamically
   const hostUri =
     (Constants.expoConfig && (Constants.expoConfig as any).hostUri) ||
     (Constants.manifest && (Constants.manifest as any).debuggerHost) ||
@@ -25,17 +32,25 @@ function getApiBaseUrl(): string {
     }
   }
 
-  return 'https://kitsphere-backend.onrender.com/api';
+  // 4. Default production fallback
+  return 'https://testing-5i1h.onrender.com/api';
 }
 
 const API_BASE_URL = getApiBaseUrl();
+const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
 export async function apiRequest<T>(
   endpoint: string,
   options: RequestInit = {},
 ): Promise<T> {
   const token = await getAuthToken();
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const url = `${API_BASE_URL}${endpoint}`;
+
+  if (isDev) {
+    console.log(`[API REQUEST] Endpoint: ${endpoint} | URL: ${url} | Method: ${options.method || 'GET'}`);
+  }
+
+  const response = await fetch(url, {
     ...options,
     headers: {
       'Content-Type': 'application/json',
@@ -43,6 +58,10 @@ export async function apiRequest<T>(
       ...(options.headers || {}),
     },
   });
+
+  if (isDev) {
+    console.log(`[API RESPONSE] Endpoint: ${endpoint} | Status: ${response.status} | Content-Type: ${response.headers.get('content-type')}`);
+  }
 
   if (response.status === 401) {
     try {
@@ -76,3 +95,4 @@ export async function apiRequest<T>(
 }
 
 export { API_BASE_URL };
+

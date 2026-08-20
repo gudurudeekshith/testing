@@ -13,6 +13,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { router, useFocusEffect } from 'expo-router';
 import { useTheme } from '../../theme/ThemeContext';
 import { apiRequest } from '../../services/api';
+const isValidObjectId = (val: string | undefined | null): boolean => {
+  if (!val) return false;
+  return /^[0-9a-fA-F]{24}$/.test(val);
+};
 
 export default function SavedClubsScreen() {
   const { colors } = useTheme();
@@ -52,12 +56,17 @@ export default function SavedClubsScreen() {
           borderColor: colors.border,
         },
       ]}
-      onPress={() =>
+      onPress={() => {
+        const clubId = item.id || item._id;
+        if (!isValidObjectId(clubId)) {
+          console.error('Invalid club details click in Saved list. Club:', item);
+          return;
+        }
         router.push({
           pathname: '/(main)/club-details',
-          params: { id: item.id || item._id },
-        })
-      }
+          params: { id: clubId },
+        });
+      }}
       activeOpacity={0.8}
     >
       <View

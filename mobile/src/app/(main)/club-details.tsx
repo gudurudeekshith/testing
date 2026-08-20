@@ -20,6 +20,11 @@ import { getCurrentUser } from '../../utils/auth';
 
 const TABS = ['About', 'Events', 'Members'];
 
+const isValidObjectId = (val: string | undefined | null): boolean => {
+  if (!val) return false;
+  return /^[0-9a-fA-F]{24}$/.test(val);
+};
+
 export default function ClubDetailsScreen() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,7 +48,11 @@ export default function ClubDetailsScreen() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const fetchClubDetails = useCallback(async () => {
-    if (!id) return;
+    if (!isValidObjectId(id)) {
+      setError('Invalid club ID');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -61,7 +70,7 @@ export default function ClubDetailsScreen() {
   }, [id]);
 
   const checkSavedStatus = useCallback(async () => {
-    if (!id) return;
+    if (!isValidObjectId(id)) return;
     try {
       const res = await apiRequest<any>(`/clubs/${id}/saved`);
       if (res.success) {
@@ -73,7 +82,7 @@ export default function ClubDetailsScreen() {
   }, [id]);
 
   const fetchClubEvents = useCallback(async () => {
-    if (!id) return;
+    if (!isValidObjectId(id)) return;
     setEventsLoading(true);
     try {
       const res = await apiRequest<any>(`/clubs/${id}/events`);
@@ -88,7 +97,7 @@ export default function ClubDetailsScreen() {
   }, [id]);
 
   const fetchClubMembers = useCallback(async () => {
-    if (!id) return;
+    if (!isValidObjectId(id)) return;
     setMembersLoading(true);
     try {
       const user = await getCurrentUser();
@@ -111,11 +120,16 @@ export default function ClubDetailsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!isValidObjectId(id)) {
+        setError('Invalid club ID');
+        setLoading(false);
+        return;
+      }
       void fetchClubDetails();
       void checkSavedStatus();
       void fetchClubEvents();
       void fetchClubMembers();
-    }, [fetchClubDetails, checkSavedStatus, fetchClubEvents, fetchClubMembers])
+    }, [id, fetchClubDetails, checkSavedStatus, fetchClubEvents, fetchClubMembers])
   );
 
   const toggleSaveClub = async () => {

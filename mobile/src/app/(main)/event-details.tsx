@@ -17,6 +17,11 @@ import { useTheme } from '../../theme/ThemeContext';
 import { apiRequest } from '../../services/api';
 import { getCurrentUser } from '../../utils/auth';
 
+const isValidObjectId = (val: string | undefined | null): boolean => {
+  if (!val) return false;
+  return /^[0-9a-fA-F]{24}$/.test(val);
+};
+
 export default function EventDetailsScreen() {
   const { colors } = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -31,7 +36,11 @@ export default function EventDetailsScreen() {
   const [currentUser, setCurrentUser] = useState<any>(null);
 
   const fetchEventDetails = useCallback(async () => {
-    if (!id) return;
+    if (!isValidObjectId(id)) {
+      setError('Invalid event ID');
+      setLoading(false);
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -49,7 +58,7 @@ export default function EventDetailsScreen() {
   }, [id]);
 
   const checkRegistrationStatus = useCallback(async () => {
-    if (!id) return;
+    if (!isValidObjectId(id)) return;
     try {
       const user = await getCurrentUser();
       setCurrentUser(user);
@@ -71,9 +80,14 @@ export default function EventDetailsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (!isValidObjectId(id)) {
+        setError('Invalid event ID');
+        setLoading(false);
+        return;
+      }
       void fetchEventDetails();
       void checkRegistrationStatus();
-    }, [fetchEventDetails, checkRegistrationStatus])
+    }, [id, fetchEventDetails, checkRegistrationStatus])
   );
 
   const handleRegisterToggle = async () => {
@@ -317,12 +331,17 @@ export default function EventDetailsScreen() {
                   <Text style={[styles.infoLabel, { color: colors.textMuted }]}>Host Club</Text>
                 </View>
                 <TouchableOpacity
-                  onPress={() =>
+                  onPress={() => {
+                    const clubId = event.club?.id || event.club?._id;
+                    if (!isValidObjectId(clubId)) {
+                      Alert.alert('Error', 'Unable to open club details. Invalid identifier.');
+                      return;
+                    }
                     router.push({
                       pathname: '/(main)/club-details',
-                      params: { id: event.club?.id || event.club?._id },
-                    })
-                  }
+                      params: { id: clubId },
+                    });
+                  }}
                 >
                   <Text style={[styles.infoValue, { color: colors.primary, textDecorationLine: 'underline' }]}>
                     {event.club.name}

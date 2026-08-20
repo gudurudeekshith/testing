@@ -26,6 +26,11 @@ const DATE_CHIPS = ['Upcoming', 'Today', 'This Week', 'This Month', 'Past'];
 const CATEGORIES = ['All', 'Technical', 'Cultural', 'Sports', 'Seminar', 'Other'];
 const CLUB_CATEGORIES = ['All', 'Technical', 'Cultural', 'Sports', 'Other'];
 
+const isValidObjectId = (val: string | undefined | null): boolean => {
+  if (!val) return false;
+  return /^[0-9a-fA-F]{24}$/.test(val);
+};
+
 // Helper functions for Date and Time Pickers
 const formatTime12h = (date: Date) => {
   let hours = date.getHours();
@@ -291,6 +296,10 @@ export default function EventsClubsScreen() {
 
   const handleJoinClubFromCard = async (club: any) => {
     const clubId = club.id || club._id;
+    if (!isValidObjectId(clubId)) {
+      Alert.alert('Error', 'Unable to join club. Invalid identifier.');
+      return;
+    }
     const joined = isClubJoined(clubId);
     try {
       if (joined) {
@@ -581,6 +590,10 @@ export default function EventsClubsScreen() {
   };
 
   const openRoster = async (type: 'event' | 'club', id: string, name: string) => {
+    if (!isValidObjectId(id)) {
+      Alert.alert('Error', `Unable to open roster. Invalid ${type} identifier.`);
+      return;
+    }
     setRosterType(type);
     setRosterTargetId(id);
     setRosterTargetName(name);
@@ -617,12 +630,18 @@ export default function EventsClubsScreen() {
             opacity: isCancelled ? 0.7 : 1,
           },
         ]}
-        onPress={() =>
+        onPress={() => {
+          const eventId = item.id || item._id;
+          if (!eventId || eventId === 'undefined' || eventId === 'null') {
+            console.error('Invalid event details click. Event:', item);
+            Alert.alert('Error', 'Unable to open event details. Invalid identifier.');
+            return;
+          }
           router.push({
             pathname: '/(main)/event-details',
-            params: { id: item.id || item._id },
-          })
-        }
+            params: { id: eventId },
+          });
+        }}
         activeOpacity={0.8}
       >
         <View style={styles.cardHeader}>
@@ -736,12 +755,18 @@ export default function EventsClubsScreen() {
       >
         <TouchableOpacity
           style={{ flexDirection: 'row', alignItems: 'center' }}
-          onPress={() =>
+          onPress={() => {
+            const clubId = item.id || item._id;
+            if (!isValidObjectId(clubId)) {
+              console.error('Invalid club details click. Club:', item);
+              Alert.alert('Error', 'Unable to open club details. Invalid identifier.');
+              return;
+            }
             router.push({
               pathname: '/(main)/club-details',
-              params: { id: item.id || item._id },
-            })
-          }
+              params: { id: clubId },
+            });
+          }}
           activeOpacity={0.8}
         >
           <View
@@ -1230,7 +1255,7 @@ export default function EventsClubsScreen() {
 
         {/* Dynamic Participants/Members Roster modal drawer */}
         {showRosterModal && (
-          <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.background, zIndex: 1000, paddingTop: 50 }]}>
+          <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background, zIndex: 1000, paddingTop: 50 }]}>
             <View style={[styles.header, { borderBottomColor: colors.border }]}>
               <TouchableOpacity onPress={() => setShowRosterModal(false)} style={styles.headerBtn}>
                 <Ionicons name="close-outline" size={24} color={colors.white} />
@@ -1808,4 +1833,36 @@ const styles = StyleSheet.create({
   memberInfo: { flex: 1 },
   memberName: { fontSize: 14, fontWeight: '700' },
   memberRole: { fontSize: 12, marginTop: 2 },
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+  },
+  statCard: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    padding: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginHorizontal: 4,
+  },
+  statIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  statValue: {
+    fontSize: 16,
+    fontWeight: '800',
+    marginBottom: 2,
+  },
+  statTitle: {
+    fontSize: 10,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
 });

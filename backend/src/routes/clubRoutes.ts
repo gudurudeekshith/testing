@@ -19,21 +19,23 @@ import { authenticate, requireAdmin } from '../middleware/authMiddleware';
 
 const router = Router();
 
-// Public routes
+// AUTHENTICATED USER ROUTES
+router.get('/saved', authenticate, getSavedClubs);
+router.get('/joined', authenticate, getJoinedClubs);
+
+// PUBLIC ROUTES
 router.get('/', getClubs);
 router.get('/:id', getClubById);
 router.get('/:id/events', getClubEvents);
 
-// Authenticated user routes (NOTE: Register '/saved' and '/joined' BEFORE '/:id' to prevent routing conflicts)
-router.get('/saved', authenticate, getSavedClubs);
-router.get('/joined', authenticate, getJoinedClubs);
+// AUTHENTICATED CLUB ACTIONS
 router.post('/:id/join', authenticate, joinClub);
 router.delete('/:id/leave', authenticate, leaveClub);
 router.post('/:id/save', authenticate, saveClub);
 router.delete('/:id/save', authenticate, unsaveClub);
 router.get('/:id/saved', authenticate, getSavedStatus);
 
-// Authenticated admin routes
+// ADMIN ROUTES
 router.post('/', authenticate, requireAdmin, createClub);
 router.patch('/:id', authenticate, requireAdmin, updateClub);
 router.delete('/:id', authenticate, requireAdmin, deleteClub);
