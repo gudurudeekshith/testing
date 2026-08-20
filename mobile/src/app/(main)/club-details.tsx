@@ -100,21 +100,27 @@ export default function ClubDetailsScreen() {
     if (!isValidObjectId(id)) return;
     setMembersLoading(true);
     try {
-      const user = await getCurrentUser();
-      setCurrentUser(user);
-
       const res = await apiRequest<any>(`/clubs/${id}/members`);
       if (res.success) {
-        const membersList = res.data || [];
-        setMembers(membersList);
-        if (user?.id) {
-          setIsMember(membersList.some((m: any) => m.userId === user.id));
-        }
+        setMembers(res.data || []);
       }
     } catch (e) {
       console.error('Fetch club members error:', e);
     } finally {
       setMembersLoading(false);
+    }
+  }, [id]);
+
+  const checkStudentMembership = useCallback(async () => {
+    if (!isValidObjectId(id)) return;
+    try {
+      const res = await apiRequest<any>('/clubs/joined');
+      if (res.success) {
+        const list = res.data || [];
+        setIsMember(list.some((c: any) => (c.id || c._id) === id));
+      }
+    } catch (e) {
+      console.error('Check student membership error:', e);
     }
   }, [id]);
 
@@ -125,11 +131,36 @@ export default function ClubDetailsScreen() {
         setLoading(false);
         return;
       }
-      void fetchClubDetails();
-      void checkSavedStatus();
-      void fetchClubEvents();
-      void fetchClubMembers();
-    }, [id, fetchClubDetails, checkSavedStatus, fetchClubEvents, fetchClubMembers])
+
+      const initData = async () => {
+        try {
+          const user = await getCurrentUser();
+          setCurrentUser(user);
+
+          console.log("[ClubDetails] current user:", user);
+          console.log("[ClubDetails] current user role:", user?.role);
+          console.log("[ClubDetails] isAdmin:", user?.role === 'admin');
+          console.log("[ClubDetails] clubId:", id);
+          console.log("[ClubDetails] fetching members:", user?.role === 'admin');
+
+          void fetchClubDetails();
+          void fetchClubEvents();
+
+          if (user) {
+            void checkSavedStatus();
+            if (user.role === 'admin') {
+              void fetchClubMembers();
+            } else {
+              void checkStudentMembership();
+            }
+          }
+        } catch (e) {
+          console.error("Initialization error in club-details:", e);
+        }
+      };
+
+      void initData();
+    }, [id, fetchClubDetails, checkSavedStatus, fetchClubEvents, fetchClubMembers, checkStudentMembership])
   );
 
   const toggleSaveClub = async () => {
@@ -165,7 +196,9 @@ export default function ClubDetailsScreen() {
                 if (res.success) {
                   setIsMember(false);
                   void fetchClubDetails();
-                  void fetchClubMembers();
+                  if (currentUser?.role === 'admin') {
+                    void fetchClubMembers();
+                  }
                 }
               } catch (err: any) {
                 Alert.alert('Error', err.message || 'Unable to leave club.');
@@ -180,7 +213,9 @@ export default function ClubDetailsScreen() {
         if (res.success) {
           setIsMember(true);
           void fetchClubDetails();
-          void fetchClubMembers();
+          if (currentUser?.role === 'admin') {
+            void fetchClubMembers();
+          }
           Alert.alert('Welcome!', 'You have successfully joined the club.');
           setJoining(false);
         }
@@ -420,7 +455,13 @@ export default function ClubDetailsScreen() {
         {activeTab === 'Members' && (
           <View style={styles.membersContainer}>
             <Text style={[styles.sectionTitle, { color: colors.white }]}>Club Roster</Text>
-            {membersLoading ? (
+            {currentUser?.role !== 'admin' ? (
+              <View style={styles.emptyTabState}>
+                <Text style={[styles.emptyTabText, { color: colors.textSecondary }]}>
+                  Members list is available to club administrators.
+                </Text>
+              </View>
+            ) : membersLoading ? (
               <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
             ) : members.length === 0 ? (
               <View style={styles.emptyTabState}>
