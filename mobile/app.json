@@ -11,7 +11,7 @@
       "GOOGLE_ANDROID_CLIENT_ID": "REPLACE_WITH_ANDROID_CLIENT_ID",
       "GOOGLE_IOS_CLIENT_ID": "REPLACE_WITH_IOS_CLIENT_ID",
       "GOOGLE_WEB_CLIENT_ID": "REPLACE_WITH_WEB_CLIENT_ID",
-      "API_BASE_URL": "http://192.168.1.10:5000/api",
+      "API_BASE_URL": "https://testing-5i1h.onrender.com/api",
       "router": {},
       "eas": {
         "projectId": "5d9c116a-1878-4524-af90-0b689a5b5ab0"

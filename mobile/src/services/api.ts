@@ -3,40 +3,14 @@ import { router } from 'expo-router';
 import { getAuthToken, clearAuth } from '../utils/auth';
 
 function getApiBaseUrl(): string {
-  // 1. Prioritize environment variable first (Expo standard EXPO_PUBLIC_ prefix)
-  if (process.env.EXPO_PUBLIC_API_BASE_URL) {
-    return process.env.EXPO_PUBLIC_API_BASE_URL.replace(/\/+$/, '');
-  }
-
-  // 2. Fallback to extra config (e.g. app.json API_BASE_URL)
-  const extra =
-    (Constants.expoConfig && (Constants.expoConfig as any).extra) ||
-    (Constants.manifest && (Constants.manifest as any).extra) ||
-    {};
-
-  const configuredUrl = extra.API_BASE_URL || '';
-  if (configuredUrl) {
-    return configuredUrl.replace(/\/+$/, '');
-  }
-
-  // 3. Fallback to Expo Go dev host dynamically
-  const hostUri =
-    (Constants.expoConfig && (Constants.expoConfig as any).hostUri) ||
-    (Constants.manifest && (Constants.manifest as any).debuggerHost) ||
-    '';
-
-  if (hostUri) {
-    const host = hostUri.split(':')[0];
-    if (host && host !== 'localhost') {
-      return `http://${host}:5000/api`;
-    }
-  }
-
-  // 4. Default production fallback
-  return 'https://testing-5i1h.onrender.com/api';
+  // Use EXPO_PUBLIC_API_URL or EXPO_PUBLIC_API_BASE_URL, default to the production Render server
+  const url = process.env.EXPO_PUBLIC_API_URL || process.env.EXPO_PUBLIC_API_BASE_URL || 'https://testing-5i1h.onrender.com/api';
+  return url.replace(/\/+$/, '');
 }
 
 const API_BASE_URL = getApiBaseUrl();
+console.log("[API CONFIG] API_BASE_URL =", API_BASE_URL);
+
 const isDev = typeof __DEV__ !== 'undefined' ? __DEV__ : true;
 
 export async function apiRequest<T>(
@@ -46,9 +20,8 @@ export async function apiRequest<T>(
   const token = await getAuthToken();
   const url = `${API_BASE_URL}${endpoint}`;
 
-  if (isDev) {
-    console.log(`[API REQUEST] Endpoint: ${endpoint} | URL: ${url} | Method: ${options.method || 'GET'}`);
-  }
+  console.log("[API REQUEST] Endpoint:", endpoint);
+  console.log("[API REQUEST] URL:", url);
 
   const response = await fetch(url, {
     ...options,
